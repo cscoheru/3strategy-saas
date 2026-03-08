@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "title": "3Strategy - HR Consulting Tools Platform",
+    "description": "A comprehensive platform for management consulting tools"
+  },
+  "navigation": {
+    "home": "Home",
+    "tools": "Tools",
+    "about": "About",
+    "contact": "Contact"
+  },
+  "hero": {
+    "title": "3Strategy HR Toolkit",
+    "subtitle": "Professional HR consulting tools for strategic management",
+    "cta": "Explore Tools"
+  },
+  "categories": {
+    "Strategy": "Strategy",
+    "Performance": "Performance",
+    "Compensation": "Compensation",
+    "Talent Review": "Talent Review",
+    "Recruitment": "Recruitment",
+    "Analytics": "Analytics",
+    "AI Tools": "AI Tools",
+    "General": "General"
+  },
+  "status": {
+    "live": "Live",
+    "coming-soon": "Coming Soon",
+    "external": "External Link"
+  },
+  "chat": {
+    "title": "AI Assistant",
+    "placeholder": "Ask me anything about HR consulting...",
+    "send": "Send",
+    "thinking": "Thinking...",
+    "model": "Model",
+    "clear": "Clear Chat"
+  },
+  "footer": {
+    "copyright": "© 2024 3Strategy. All rights reserved.",
+    "powered": "Powered by AI"
+  }
+}

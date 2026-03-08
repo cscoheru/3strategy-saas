@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "title": "3Strategy - 管理咨询工具平台",
+    "description": "面向 C 端用户的管理咨询工具聚合平台"
+  },
+  "navigation": {
+    "home": "首页",
+    "tools": "工具",
+    "about": "关于",
+    "contact": "联系我们"
+  },
+  "hero": {
+    "title": "3Strategy 人力资源工具箱",
+    "subtitle": "专业的管理咨询工具，助力战略人力资源规划",
+    "cta": "探索工具"
+  },
+  "categories": {
+    "Strategy": "战略",
+    "Performance": "绩效",
+    "Compensation": "薪酬",
+    "Talent Review": "人才盘点",
+    "Recruitment": "招聘",
+    "Analytics": "分析",
+    "AI Tools": "AI 工具",
+    "General": "通用"
+  },
+  "status": {
+    "live": "已上线",
+    "coming-soon": "即将推出",
+    "external": "外部链接"
+  },
+  "chat": {
+    "title": "AI 助手",
+    "placeholder": "问我任何关于管理咨询的问题...",
+    "send": "发送",
+    "thinking": "思考中...",
+    "model": "模型",
+    "clear": "清空对话"
+  },
+  "footer": {
+    "copyright": "© 2024 3Strategy 版权所有",
+    "powered": "由 AI 驱动"
+  }
+}
