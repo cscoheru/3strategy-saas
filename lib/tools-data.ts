@@ -40,7 +40,7 @@ export const toolCategories: ToolCategory[] = [
         icon: Compass,
         category: "org-improvement",
         status: "available",
-        url: "https://strategy-kappa.vercel.app",
+        url: "tools/strategy-decode",
         subModules: [
           "业务复盘",
           "市场洞察",
