@@ -4,11 +4,21 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server'
 
+// 超时保护函数
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+    ),
+  ])
+}
+
 /**
  * 用户注册
  */
 export async function signUp(formData: FormData) {
-  const supabase = await createServerClient()
+  console.log('[Auth] Starting signup...')
 
   const email = formData.get('email') as string
   const password = formData.get('password') as string
@@ -16,74 +26,63 @@ export async function signUp(formData: FormData) {
 
   // 验证输入
   if (!email || !password || !name) {
+    console.log('[Auth] Validation failed: missing fields')
     return { error: '请填写所有必填项' }
   }
 
   if (password.length < 6) {
+    console.log('[Auth] Validation failed: password too short')
     return { error: '密码至少需要6个字符' }
   }
 
   try {
-    // 注册用户 - 禁用邮箱验证要求
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
+    const supabase = await createServerClient()
+    console.log('[Auth] Calling supabase.auth.signUp...')
+
+    // 注册用户 - 添加 15 秒超时
+    const { data, error } = await withTimeout(
+      supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name },
+          emailRedirectTo: undefined,
         },
-        emailRedirectTo: undefined, // 不需要重定向
-      },
-    })
+      }),
+      15000,
+      '注册请求超时，请检查网络连接或稍后重试'
+    )
 
     if (error) {
-      console.error('Signup error:', error)
+      console.error('[Auth] Signup error:', error)
       return { error: error.message }
     }
 
-    // 创建用户Profile
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          email: data.user.email!,
-          name: name,
-          created_at: new Date().toISOString(),
-        })
-
-      if (profileError) {
-        console.error('Profile creation error:', profileError)
-        // 继续执行，因为auth已经创建成功
-      }
-    }
+    console.log('[Auth] Signup successful:', data.user?.id)
 
     revalidatePath('/', 'layout')
 
-    // 注册成功后自动登录
-    if (data.user) {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+    // 注册成功后自动登录 - 添加 10 秒超时
+    console.log('[Auth] Attempting auto signin...')
+    const { error: signInError } = await withTimeout(
+      supabase.auth.signInWithPassword({ email, password }),
+      10000,
+      '登录请求超时'
+    )
 
-      if (signInError) {
-        console.error('Auto signin error:', signInError)
-        // 即使自动登录失败，注册也成功了
-      } else {
-        // 自动登录成功，重定向到dashboard
-        redirect('/zh/dashboard')
+    if (signInError) {
+      console.error('[Auth] Auto signin error:', signInError)
+      return {
+        success: true,
+        message: '注册成功！请登录。',
       }
     }
 
-    return {
-      success: true,
-      message: '注册成功！正在跳转...',
-      user: data.user,
-    }
+    console.log('[Auth] Auto signin successful, redirecting to dashboard')
+    redirect('/zh/dashboard')
   } catch (error) {
-    console.error('Signup exception:', error)
-    return { error: '注册失败，请稍后重试' }
+    console.error('[Auth] Signup exception:', error)
+    return { error: error instanceof Error ? error.message : '注册失败，请稍后重试' }
   }
 }
 
@@ -91,27 +90,39 @@ export async function signUp(formData: FormData) {
  * 用户登录
  */
 export async function signIn(formData: FormData) {
-  const supabase = await createServerClient()
+  console.log('[Auth] Starting signin...')
 
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 
   if (!email || !password) {
+    console.log('[Auth] Validation failed: missing fields')
     return { error: '请填写邮箱和密码' }
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+  try {
+    const supabase = await createServerClient()
+    console.log('[Auth] Calling supabase.auth.signInWithPassword...')
 
-  if (error) {
-    console.error('Signin error:', error)
-    return { error: error.message }
+    const { data, error } = await withTimeout(
+      supabase.auth.signInWithPassword({ email, password }),
+      10000,
+      '登录请求超时，请检查网络连接'
+    )
+
+    if (error) {
+      console.error('[Auth] Signin error:', error)
+      return { error: error.message }
+    }
+
+    console.log('[Auth] Signin successful:', data.user?.id)
+
+    revalidatePath('/', 'layout')
+    redirect('/zh/dashboard')
+  } catch (error) {
+    console.error('[Auth] Signin exception:', error)
+    return { error: error instanceof Error ? error.message : '登录失败，请稍后重试' }
   }
-
-  revalidatePath('/', 'layout')
-  redirect('/zh/dashboard')
 }
 
 /**
