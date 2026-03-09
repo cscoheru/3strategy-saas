@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Trash2, Download, Settings } from 'lucide-react';
+import { Plus, Trash2, Download, Settings, Calculator, TrendingUp, RefreshCw } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -19,6 +19,7 @@ import {
   AreaChart,
   ReferenceLine
 } from 'recharts';
+import { compensationApi, type TaxCalculation, type SalaryAnalysis } from '@/lib/hr-api';
 
 interface SalaryBand {
   id: string;
@@ -53,6 +54,59 @@ export default function BroadbandDesigner() {
   const [bands, setBands] = useState<SalaryBand[]>(DEFAULT_BANDS);
   const [selectedBand, setSelectedBand] = useState<string | null>(null);
   const [overlapMode, setOverlapMode] = useState<'none' | 'moderate' | 'high'>('moderate');
+
+  // 个税计算相关状态
+  const [testSalary, setTestSalary] = useState(25000);
+  const [taxResult, setTaxResult] = useState<TaxCalculation | null>(null);
+  const [salaryAnalysis, setSalaryAnalysis] = useState<SalaryAnalysis | null>(null);
+  const [loadingTax, setLoadingTax] = useState(false);
+
+  // 加载Compensation Service的宽带数据
+  useEffect(() => {
+    loadServiceBands();
+  }, []);
+
+  const loadServiceBands = async () => {
+    try {
+      const serviceBands = await compensationApi.getBroadbandBands();
+      if (serviceBands && serviceBands.length > 0) {
+        // 转换服务数据格式到前端格式
+        const converted = serviceBands.map((band, idx) => ({
+          id: band.grade || String(idx),
+          level: band.grade.substring(0, 2).toUpperCase(),
+          title: band.grade.charAt(0).toUpperCase() + band.grade.slice(1),
+          min: band.min_salary,
+          mid: band.mid_salary,
+          max: band.max_salary,
+          color: COLORS[idx % COLORS.length],
+        }));
+        setBands(converted);
+      }
+    } catch (error) {
+      console.error('Failed to load service bands:', error);
+      // 使用默认数据
+    }
+  };
+
+  const calculateTax = async () => {
+    if (!testSalary || testSalary <= 0) return;
+
+    setLoadingTax(true);
+    try {
+      // 计算个税
+      const taxData = await compensationApi.calculateTax(testSalary);
+      setTaxResult(taxData);
+
+      // 分析薪资位置
+      const analysis = await compensationApi.analyzeSalaryPosition(testSalary);
+      setSalaryAnalysis(analysis);
+    } catch (error) {
+      console.error('Tax calculation error:', error);
+      alert('计算失败，请确保Compensation Service运行在 http://localhost:8002');
+    } finally {
+      setLoadingTax(false);
+    }
+  };
 
   // Calculate overlap percentages
   const calculateOverlap = (band1: SalaryBand, band2: SalaryBand) => {
@@ -437,7 +491,146 @@ export default function BroadbandDesigner() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Tax Calculator - Connected to Compensation Service */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Calculator className="w-5 h-5" />
+                  个税计算器
+                  <span className="text-xs font-normal text-slate-500 ml-2">
+                    🔗 Compensation Service
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Input */}
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <Label className="text-sm">税前工资 (元)</Label>
+                      <Input
+                        type="number"
+                        value={testSalary}
+                        onChange={(e) => setTestSalary(Number(e.target.value))}
+                        placeholder="25000"
+                        className="mt-1"
+                      />
+                    </div>
+                    <Button
+                      onClick={calculateTax}
+                      disabled={loadingTax || !testSalary}
+                      className="mt-6"
+                    >
+                      {loadingTax ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          计算中
+                        </>
+                      ) : (
+                        <>
+                          <Calculator className="w-4 h-4 mr-2" />
+                          计算
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Results */}
+                  {taxResult && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-slate-50 rounded-lg">
+                      <div className="text-center">
+                        <div className="text-sm text-slate-500">税前工资</div>
+                        <div className="text-lg font-bold text-slate-900">
+                          ¥{taxResult.gross_salary.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm text-slate-500">社保个人</div>
+                        <div className="text-lg font-bold text-slate-700">
+                          -¥{taxResult.social_insurance.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm text-slate-500">公积金个人</div>
+                        <div className="text-lg font-bold text-slate-700">
+                          -¥{taxResult.housing_fund.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm text-slate-500">个人所得税</div>
+                        <div className="text-lg font-bold text-red-600">
+                          -¥{taxResult.tax.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="col-span-2 text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div className="text-sm text-green-700">税后工资</div>
+                        <div className="text-2xl font-bold text-green-700">
+                          ¥{taxResult.net_salary.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="col-span-2 text-center p-3 bg-slate-100 rounded-lg">
+                        <div className="text-sm text-slate-600">实际税率</div>
+                        <div className="text-2xl font-bold text-slate-700">
+                          {taxResult.effective_rate}%
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Salary Analysis */}
+                  {salaryAnalysis && (
+                    <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="w-4 h-4 text-indigo-600" />
+                        <span className="text-sm font-medium text-indigo-900">薪资宽带分析</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-slate-600">等级:</span>
+                          <span className="ml-2 font-medium">{salaryAnalysis.grade}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-600">位置:</span>
+                          <span className="ml-2 font-medium">
+                            {salaryAnalysis.analysis?.position_in_band}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-600">四分位:</span>
+                          <span className="ml-2 font-medium">
+                            {salaryAnalysis.analysis?.quartile}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-xs text-slate-600">
+                        建议: {
+                          salaryAnalysis.analysis?.recommendation === 'top_performer' ? '表现优秀' :
+                          salaryAnalysis.analysis?.recommendation === 'appropriate' ? '薪资适当' :
+                          salaryAnalysis.analysis?.recommendation === 'consider_raise' ? '建议加薪' :
+                          '建议大幅加薪'
+                        }
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
+        </div>
+
+        {/* Service Status Footer */}
+        <div className="mt-6 p-4 bg-slate-100 rounded-lg text-sm text-slate-600 flex justify-between">
+          <span>🔗 Compensation Service: http://localhost:8002</span>
+          <Button
+            onClick={loadServiceBands}
+            size="sm"
+            variant="outline"
+            className="h-7"
+          >
+            <RefreshCw className="w-3 h-3 mr-1" />
+            从服务加载数据
+          </Button>
         </div>
       </div>
     </div>
