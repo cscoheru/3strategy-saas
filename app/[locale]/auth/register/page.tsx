@@ -1,19 +1,53 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { signUp } from '@/app/actions/auth'
-import { Sparkles, Mail, Lock, User, AlertCircle, Loader2 } from 'lucide-react'
+import { Sparkles, Mail, Lock, User, AlertCircle, Loader2, Clock } from 'lucide-react'
 import Link from 'next/link'
 
 export default function RegisterPage({ params }: { params: Promise<{ locale: string }> }) {
   const [error, setError] = useState<string>('')
   const [isPending, startTransition] = useTransition()
+  const [lastAttemptTime, setLastAttemptTime] = useState<number>(0)
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(0)
+
+  // 检查冷却时间
+  useEffect(() => {
+    if (lastAttemptTime > 0) {
+      const checkCooldown = setInterval(() => {
+        const elapsed = Date.now() - lastAttemptTime
+        const remaining = Math.max(0, 60 - Math.floor(elapsed / 1000)) // 60秒冷却
+        setCooldownRemaining(remaining)
+
+        if (remaining <= 0) {
+          clearInterval(checkCooldown)
+          setLastAttemptTime(0)
+        }
+      }, 1000)
+
+      return () => clearInterval(checkCooldown)
+    }
+  }, [lastAttemptTime])
 
   async function handleSubmit(formData: FormData) {
+    // 检查冷却时间
+    if (cooldownRemaining > 0) {
+      setError(`请等待 ${cooldownRemaining} 秒后再试，或使用其他邮箱地址。`)
+      return
+    }
+
     setError('')
+    setLastAttemptTime(Date.now())
+
     startTransition(async () => {
       const result = await signUp(formData)
+
+      // 如果注册失败，重置冷却时间（非速率限制错误）
       if (result?.error) {
+        if (!result.error.includes('过于频繁') && !result.error.includes('rate limit')) {
+          setLastAttemptTime(0)
+          setCooldownRemaining(0)
+        }
         setError(result.error)
       }
       // 成功后会自动redirect
@@ -41,6 +75,17 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
         {/* Register Form */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-border p-8">
           <form action={handleSubmit} className="space-y-5">
+            {/* Cooldown Warning */}
+            {cooldownRemaining > 0 && (
+              <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                <Clock className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-700 dark:text-amber-400">
+                  <p className="font-medium">请等待 {cooldownRemaining} 秒后再试</p>
+                  <p className="text-xs mt-1">为保护账户安全，注册请求有频率限制</p>
+                </div>
+              </div>
+            )}
+
             {/* Error Message */}
             {error && (
               <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl">
@@ -133,13 +178,18 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isPending}
+              disabled={isPending || cooldownRemaining > 0}
               className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 px-4 rounded-xl font-medium hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   注册中...
+                </>
+              ) : cooldownRemaining > 0 ? (
+                <>
+                  <Clock className="h-4 w-4" />
+                  请等待 {cooldownRemaining} 秒
                 </>
               ) : (
                 '创建账户'
