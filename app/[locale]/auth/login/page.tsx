@@ -102,7 +102,7 @@ export default function LoginPage({ params }: { params: Promise<{ locale: string
                 <input type="checkbox" className="rounded border-border" />
                 <span className="text-sm text-muted-foreground">记住我</span>
               </label>
-              <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
+              <Link href="../forgot-password" className="text-sm text-primary hover:underline">
                 忘记密码？
               </Link>
             </div>
@@ -136,7 +136,7 @@ export default function LoginPage({ params }: { params: Promise<{ locale: string
 
           {/* Register Link */}
           <Link
-            href="/auth/register"
+            href="register"
             className="w-full flex items-center justify-center gap-2 border-2 border-border py-3 px-4 rounded-xl font-medium hover:bg-secondary transition-all"
           >
             创建新账户

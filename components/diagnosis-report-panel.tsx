@@ -426,7 +426,7 @@ export function DiagnosisReportPanel({ sessionId, onBack }: DiagnosisReportPanel
 
             <div className="space-y-3">
               <Link
-                href="/auth/register"
+                href="/zh/auth/register"
                 className="w-full rounded-xl bg-primary text-primary-foreground py-3 px-6 font-medium hover:bg-primary/90 transition-all flex items-center justify-center"
               >
                 立即注册

@@ -188,7 +188,7 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
 
           {/* Login Link */}
           <Link
-            href="/auth/login"
+            href="login"
             className="w-full flex items-center justify-center gap-2 border-2 border-border py-3 px-4 rounded-xl font-medium hover:bg-secondary transition-all"
           >
             立即登录
