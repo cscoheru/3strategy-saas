@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Download, ArrowLeft, CheckCircle2, AlertTriangle, Lightbulb, Hash, TrendingUp, FileText, Sparkles } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase/client-singleton'
+import Link from 'next/link'
 
 interface DiagnosisReportPanelProps {
   sessionId: string
@@ -49,6 +51,7 @@ const defaultData = {
 }
 
 export function DiagnosisReportPanel({ sessionId, onBack }: DiagnosisReportPanelProps) {
+  const router = useRouter()
   const [sessionData, setSessionData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [showRegisterModal, setShowRegisterModal] = useState(false)
@@ -422,9 +425,12 @@ export function DiagnosisReportPanel({ sessionId, onBack }: DiagnosisReportPanel
             </div>
 
             <div className="space-y-3">
-              <button className="w-full rounded-xl bg-primary text-primary-foreground py-3 px-6 font-medium hover:bg-primary/90 transition-all">
+              <Link
+                href="/auth/register"
+                className="w-full rounded-xl bg-primary text-primary-foreground py-3 px-6 font-medium hover:bg-primary/90 transition-all flex items-center justify-center"
+              >
                 立即注册
-              </button>
+              </Link>
               <button
                 onClick={() => setShowRegisterModal(false)}
                 className="w-full rounded-xl border border-border py-3 px-6 font-medium hover:bg-secondary transition-all"

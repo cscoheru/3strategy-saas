@@ -39,12 +39,12 @@ export default function Home({ params }: { params: Promise<{ locale: string }> }
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-secondary">
+            <Link href="/auth/login" className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-secondary">
               登录
-            </button>
-            <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
+            </Link>
+            <Link href="/auth/register" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
               开始使用
-            </button>
+            </Link>
           </div>
         </div>
       </header>
