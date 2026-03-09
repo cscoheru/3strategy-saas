@@ -55,6 +55,14 @@ export async function signUp(formData: FormData) {
 
     if (error) {
       console.error('[Auth] Signup error:', error)
+
+      // 处理速率限制错误
+      if (error.message?.includes('rate limit') || error.message?.includes('Too many requests')) {
+        return {
+          error: '请求过于频繁，请等待约1小时后再试，或使用其他邮箱地址注册。'
+        }
+      }
+
       return { error: error.message }
     }
 
@@ -82,7 +90,17 @@ export async function signUp(formData: FormData) {
     redirect('/zh/dashboard')
   } catch (error) {
     console.error('[Auth] Signup exception:', error)
-    return { error: error instanceof Error ? error.message : '注册失败，请稍后重试' }
+
+    const errorMessage = error instanceof Error ? error.message : '注册失败，请稍后重试'
+
+    // 处理速率限制错误
+    if (errorMessage?.includes('rate limit') || errorMessage?.includes('Too many requests')) {
+      return {
+        error: '请求过于频繁，请等待约1小时后再试，或使用其他邮箱地址注册。'
+      }
+    }
+
+    return { error: errorMessage }
   }
 }
 
