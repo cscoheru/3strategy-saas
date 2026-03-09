@@ -23,44 +23,67 @@ export async function signUp(formData: FormData) {
     return { error: '密码至少需要6个字符' }
   }
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name,
+  try {
+    // 注册用户 - 禁用邮箱验证要求
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+        },
+        emailRedirectTo: undefined, // 不需要重定向
       },
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
-    },
-  })
+    })
 
-  if (error) {
-    console.error('Signup error:', error)
-    return { error: error.message }
-  }
+    if (error) {
+      console.error('Signup error:', error)
+      return { error: error.message }
+    }
 
-  // 创建用户Profile
-  if (data.user) {
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: data.user.id,
-        email: data.user.email!,
-        name: name,
-        created_at: new Date().toISOString(),
+    // 创建用户Profile
+    if (data.user) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: data.user.id,
+          email: data.user.email!,
+          name: name,
+          created_at: new Date().toISOString(),
+        })
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError)
+        // 继续执行，因为auth已经创建成功
+      }
+    }
+
+    revalidatePath('/', 'layout')
+
+    // 注册成功后自动登录
+    if (data.user) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
 
-    if (profileError) {
-      console.error('Profile creation error:', profileError)
-      // 继续执行，因为auth已经创建成功
+      if (signInError) {
+        console.error('Auto signin error:', signInError)
+        // 即使自动登录失败，注册也成功了
+      } else {
+        // 自动登录成功，重定向到dashboard
+        redirect('/zh/dashboard')
+      }
     }
-  }
 
-  revalidatePath('/', 'layout')
-  return {
-    success: true,
-    message: '注册成功！请检查邮箱验证您的账户。',
-    user: data.user,
+    return {
+      success: true,
+      message: '注册成功！正在跳转...',
+      user: data.user,
+    }
+  } catch (error) {
+    console.error('Signup exception:', error)
+    return { error: '注册失败，请稍后重试' }
   }
 }
 

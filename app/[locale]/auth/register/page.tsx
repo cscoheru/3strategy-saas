@@ -2,14 +2,11 @@
 
 import { useState } from 'react'
 import { signUp } from '@/app/actions/auth'
-import { Sparkles, Mail, Lock, User, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Sparkles, Mail, Lock, User, AlertCircle, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 export default function RegisterPage({ params }: { params: Promise<{ locale: string }> }) {
-  const router = useRouter()
   const [error, setError] = useState<string>('')
-  const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -24,34 +21,8 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
 
     if (result?.error) {
       setError(result.error)
-    } else if (result?.success) {
-      setSuccess(true)
-      // 3秒后跳转到登录页
-      setTimeout(() => {
-        router.push('/auth/login?registered=true')
-      }, 3000)
     }
-  }
-
-  if (success) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:to-slate-900 px-4">
-        <div className="w-full max-w-md text-center">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-border p-8">
-            <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-950/20 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
-            </div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">注册成功！</h2>
-            <p className="text-muted-foreground mb-4">
-              请检查您的邮箱，我们发送了一封验证邮件。验证后即可登录。
-            </p>
-            <p className="text-sm text-muted-foreground">
-              正在跳转到登录页面...
-            </p>
-          </div>
-        </div>
-      </div>
-    )
+    // 成功后会自动redirect，不需要手动处理
   }
 
   return (
@@ -170,7 +141,14 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 px-4 rounded-xl font-medium hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? '注册中...' : '创建账户'}
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  注册中...
+                </>
+              ) : (
+                '创建账户'
+              )}
             </button>
           </form>
 

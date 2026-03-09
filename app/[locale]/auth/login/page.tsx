@@ -2,12 +2,10 @@
 
 import { useState } from 'react'
 import { signIn } from '@/app/actions/auth'
-import { Sparkles, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react'
+import { Sparkles, Mail, Lock, AlertCircle, ArrowRight, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 export default function LoginPage({ params }: { params: Promise<{ locale: string }> }) {
-  const router = useRouter()
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState(false)
 
@@ -23,10 +21,8 @@ export default function LoginPage({ params }: { params: Promise<{ locale: string
 
     if (result?.error) {
       setError(result.error)
-    } else {
-      // 成功后会自动redirect
-      router.push('/zh/dashboard')
     }
+    // 成功后会自动redirect，不需要手动跳转
   }
 
   return (
@@ -113,7 +109,12 @@ export default function LoginPage({ params }: { params: Promise<{ locale: string
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 px-4 rounded-xl font-medium hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? '登录中...' : (
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  登录中...
+                </>
+              ) : (
                 <>
                   登录
                   <ArrowRight className="h-4 w-4" />
