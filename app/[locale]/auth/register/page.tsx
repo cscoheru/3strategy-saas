@@ -1,28 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { signUp } from '@/app/actions/auth'
 import { Sparkles, Mail, Lock, User, AlertCircle, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function RegisterPage({ params }: { params: Promise<{ locale: string }> }) {
   const [error, setError] = useState<string>('')
-  const [loading, setLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function handleSubmit(formData: FormData) {
     setError('')
-    setLoading(true)
-
-    const formData = new FormData(event.currentTarget)
-    const result = await signUp(formData)
-
-    setLoading(false)
-
-    if (result?.error) {
-      setError(result.error)
-    }
-    // 成功后会自动redirect，不需要手动处理
+    startTransition(async () => {
+      const result = await signUp(formData)
+      if (result?.error) {
+        setError(result.error)
+      }
+      // 成功后会自动redirect
+    })
   }
 
   return (
@@ -45,7 +40,7 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
 
         {/* Register Form */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-border p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form action={handleSubmit} className="space-y-5">
             {/* Error Message */}
             {error && (
               <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl">
@@ -138,10 +133,10 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={isPending}
               className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 px-4 rounded-xl font-medium hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? (
+              {isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   注册中...
