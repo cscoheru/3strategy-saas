@@ -115,12 +115,15 @@ export default function Home({ params }: { params: Promise<{ locale: string }> }
               )
 
               if (tool.url) {
+                const isExternal = tool.url.startsWith('http')
                 return (
                   <Link
                     key={tool.id}
                     href={getLocalizedUrl(tool.url)}
                     onClick={() => handleToolClick(tool)}
                     className="block h-full"
+                    target={isExternal ? '_blank' : undefined}
+                    rel={isExternal ? 'noopener noreferrer' : undefined}
                   >
                     {ToolContent}
                   </Link>
